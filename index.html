@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>قسّم الحساب</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f1ff;--card:#fff;--ink:#1b1340;--mute:#6d6590;--line:#e2daf5;--pink:#ff4d8d;--yel:#ffd23f;--teal:#19c3a6}
+@media (prefers-color-scheme:dark){:root{--bg:#17122e;--card:#221b45;--ink:#f4f0ff;--mute:#a79fcb;--line:#3a3166}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Baloo Bhaijaan 2",system-ui,sans-serif;line-height:1.6;padding-bottom:60px}
+main{max-width:620px;margin:0 auto;padding:22px 16px}
+header{display:flex;justify-content:space-between;align-items:center}
+h1{font-size:2.2rem;font-weight:800;margin:0;letter-spacing:-.5px}
+h1 span{display:inline-block;background:var(--yel);color:#1b1340;padding:0 12px;border-radius:12px;transform:rotate(-3deg)}
+h2{font-size:1.2rem;margin:0 0 10px}
+.sub{color:var(--mute);margin:4px 0 20px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:16px;margin-bottom:16px}
+input,select{font:inherit;color:inherit;background:transparent;border:2px solid var(--line);border-radius:12px;padding:8px 12px;width:100%;min-width:0}
+input:focus,select:focus{outline:none;border-color:var(--pink)}
+select option{color:#1b1340}
+.row{display:flex;gap:8px;margin-bottom:8px}
+button{font:inherit;font-weight:600;border:0;border-radius:12px;padding:8px 16px;cursor:pointer;color:#fff;background:var(--pink);box-shadow:0 4px 0 #c42d68;transition:transform .08s,box-shadow .08s}
+button:active{transform:translateY(4px);box-shadow:0 0 0 #c42d68}
+button:focus-visible,input:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+button.alt{background:var(--teal);box-shadow:0 4px 0 #0e8d77}
+button.alt:active{box-shadow:0 0 0 #0e8d77}
+button.ghost{background:transparent;color:var(--ink);box-shadow:none;border:2px solid var(--line);padding:4px 10px}
+button.big{width:100%;font-size:1.25rem;padding:12px;background:var(--ink);color:var(--bg);box-shadow:0 5px 0 var(--pink)}
+button.big:active{box-shadow:0 0 0 var(--pink)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:2px solid var(--line);border-radius:999px;padding:2px 12px;animation:pop .3s cubic-bezier(.3,1.8,.5,1)}
+.chip b{cursor:pointer;color:var(--pink)}
+.chip.sel{background:var(--yel);color:#1b1340;border-color:var(--yel)}
+.chip input{width:auto;accent-color:var(--pink)}
+.chip label{cursor:pointer}
+.exp{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:2px dashed var(--line);animation:pop .3s}
+.exp small{color:var(--mute);display:block}
+.res{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:16px;padding:12px 14px;margin-bottom:10px;opacity:0;transform:translateY(16px) scale(.96);animation:rise .45s forwards}
+.res .amt{margin-inline-start:auto;font-size:1.5rem;font-weight:800;color:var(--pink)}
+.arrow{color:var(--teal);font-size:1.4rem}
+.empty{color:var(--mute);text-align:center;padding:8px}
+.tot{display:flex;justify-content:space-between;color:var(--mute);margin-bottom:12px}
+#mute{position:fixed;top:12px;left:12px;z-index:5;padding:6px 12px}
+canvas{position:fixed;inset:0;pointer-events:none;z-index:9}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes rise{to{opacity:1;transform:none}}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.shake{animation:shake .25s}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.res{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<button id="mute" class="ghost" aria-label="تشغيل أو إيقاف الصوت">🔊</button>
+<main>
+  <header><h1>قسّم <span>الحساب</span></h1></header>
+  <p class="sub">اكتب مين دفع إيه، والموقع يقولك مين يدّي مين.</p>
+
+  <section class="card">
+    <h2>الشلة</h2>
+    <div class="row">
+      <input id="pname" placeholder="اسم الصاحب" maxlength="20">
+      <button id="addP" class="alt">ضيف</button>
+    </div>
+    <div class="chips" id="people"></div>
+  </section>
+
+  <section class="card">
+    <h2>مصروف جديد</h2>
+    <div class="row"><input id="desc" placeholder="على إيه؟ (عشا، بنزين...)" maxlength="30"></div>
+    <div class="row">
+      <select id="payer" aria-label="مين دفع"></select>
+      <input id="amount" type="number" inputmode="decimal" min="0" placeholder="المبلغ">
+    </div>
+    <p style="margin:6px 0 0;color:var(--mute)">اللي شارك:</p>
+    <div class="chips" id="shares"></div>
+    <div class="row" style="margin-top:12px"><button id="addE" style="width:100%">سجّل المصروف</button></div>
+    <div id="exps"></div>
+  </section>
+
+  <button id="calc" class="big">احسب بقى! 🧮</button>
+
+  <section class="card" id="resCard" style="margin-top:16px;display:none">
+    <h2>النتيجة</h2>
+    <div class="tot"><span>إجمالي المصروفات</span><b id="total"></b></div>
+    <div id="results"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="copy" class="alt" style="flex:1">انسخ للواتساب</button>
+      <button id="reset" class="ghost">ابدأ من جديد</button>
+    </div>
+  </section>
+</main>
+<canvas id="fx"></canvas>
+
+<script>
+const $ = id => document.getElementById(id);
+let people = [], expenses = [], selected = new Set(), muted = false, lastText = "";
+
+/* ===== الأصوات (بدون موسيقى، مجرد مؤثرات للأزرار) ===== */
+let ac;
+function tone(f, d = .1, type = "sine", v = .12, to = null, delay = 0){
+  if(muted) return;
+  try{
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if(ac.state === "suspended") ac.resume();
+    const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if(to) o.frequency.exponentialRampToValueAtTime(to, t + d);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d);
+  }catch(e){}
+}
+const sfx = {
+  click: () => tone(520, .08, "triangle", .1, 760),
+  add:   () => { tone(523, .1, "sine", .12); tone(784, .14, "sine", .12, null, .09); },
+  del:   () => tone(400, .15, "triangle", .1, 180),
+  err:   () => { tone(160, .15, "sawtooth", .08); tone(130, .18, "sawtooth", .08, null, .12); },
+  tick:  () => tone(900, .03, "square", .04),
+  win:   () => [523, 659, 784, 1047].forEach((f, i) => tone(f, .22, "triangle", .13, null, i * .09)),
+};
+$("mute").onclick = () => { muted = !muted; $("mute").textContent = muted ? "🔇" : "🔊"; if(!muted) sfx.click(); };
+
+/* ===== كونفيتي ===== */
+const cv = $("fx"), cx = cv.getContext("2d"); let parts = [], raf;
+function confetti(){
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches) return;
+  cv.width = innerWidth; cv.height = innerHeight;
+  const cols = ["#ff4d8d", "#ffd23f", "#19c3a6", "#7a5cff", "#ff8a3d"];
+  parts = Array.from({length: 130}, () => ({
+    x: innerWidth / 2, y: innerHeight * .6, r: 4 + Math.random() * 5,
+    vx: (Math.random() - .5) * 16, vy: -8 - Math.random() * 12,
+    c: cols[Math.random() * 5 | 0], a: Math.random() * 6, life: 0
+  }));
+  cancelAnimationFrame(raf); loop();
+}
+function loop(){
+  cx.clearRect(0, 0, cv.width, cv.height);
+  parts.forEach(p => { p.vy += .35; p.x += p.vx; p.y += p.vy; p.a += .2; p.life++;
+    cx.save(); cx.translate(p.x, p.y); cx.rotate(p.a); cx.fillStyle = p.c; cx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); cx.restore(); });
+  parts = parts.filter(p => p.y < cv.height + 20 && p.life < 160);
+  if(parts.length) raf = requestAnimationFrame(loop); else cx.clearRect(0, 0, cv.width, cv.height);
+}
+
+/* ===== الواجهة ===== */
+const esc = s => s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money = n => (Math.round(n * 100) / 100).toLocaleString("ar-EG") + " ج";
+function shake(el){ el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake"); sfx.err(); el.focus(); }
+
+function render(){
+  $("people").innerHTML = people.length ? people.map(p => `<span class="chip">${esc(p)} <b data-del="${esc(p)}" role="button" aria-label="احذف ${esc(p)}">×</b></span>`).join("") : '<span class="empty">ضيف أسامي الشلة الأول</span>';
+  const keep = $("payer").value;
+  $("payer").innerHTML = people.map(p => `<option ${p === keep ? "selected" : ""}>${esc(p)}</option>`).join("");
+  $("shares").innerHTML = people.map(p => `<span class="chip ${selected.has(p) ? "sel" : ""}"><label><input type="checkbox" data-sh="${esc(p)}" ${selected.has(p) ? "checked" : ""}> ${esc(p)}</label></span>`).join("");
+  $("exps").innerHTML = expenses.map((e, i) => `<div class="exp"><div><b>${esc(e.desc)}</b><small>${esc(e.payer)} دفع ${money(e.amount)} · ${e.shares.length} أشخاص</small></div><button class="ghost" data-ex="${i}" aria-label="احذف المصروف">🗑</button></div>`).join("");
+}
+
+$("addP").onclick = () => {
+  const n = $("pname").value.trim();
+  if(!n || people.includes(n)) return shake($("pname"));
+  people.push(n); selected.add(n); $("pname").value = ""; sfx.add(); render(); $("pname").focus();
+};
+$("pname").addEventListener("keydown", e => e.key === "Enter" && $("addP").click());
+
+$("people").onclick = e => {
+  const n = e.target.dataset.del; if(!n) return;
+  people = people.filter(p => p !== n); selected.delete(n);
+  expenses = expenses.filter(x => x.payer !== n).map(x => ({...x, shares: x.shares.filter(s => s !== n)})).filter(x => x.shares.length);
+  sfx.del(); render();
+};
+$("shares").onchange = e => {
+  const n = e.target.dataset.sh; if(!n) return;
+  e.target.checked ? selected.add(n) : selected.delete(n); sfx.click(); render();
+};
+$("addE").onclick = () => {
+  const amount = parseFloat($("amount").value), desc = $("desc").value.trim() || "مصروف";
+  if(people.length < 2) return shake($("pname"));
+  if(!(amount > 0)) return shake($("amount"));
+  if(!selected.size) return sfx.err();
+  expenses.push({desc, payer: $("payer").value, amount, shares: [...selected]});
+  $("desc").value = ""; $("amount").value = ""; sfx.add(); render();
+};
+$("exps").onclick = e => {
+  const i = e.target.dataset.ex; if(i === undefined) return;
+  expenses.splice(i, 1); sfx.del(); render();
+};
+
+/* ===== الحساب: أقل عدد تحويلات ===== */
+function settle(){
+  const bal = Object.fromEntries(people.map(p => [p, 0]));
+  expenses.forEach(e => { const per = e.amount / e.shares.length; bal[e.payer] += e.amount; e.shares.forEach(s => bal[s] -= per); });
+  const cr = [], db = [];
+  for(const [n, v] of Object.entries(bal)){ const r = Math.round(v * 100) / 100; if(r > .01) cr.push([n, r]); else if(r < -.01) db.push([n, -r]); }
+  cr.sort((a, b) => b[1] - a[1]); db.sort((a, b) => b[1] - a[1]);
+  const out = []; let i = 0, j = 0;
+  while(i < db.length && j < cr.length){
+    const m = Math.min(db[i][1], cr[j][1]);
+    out.push({from: db[i][0], to: cr[j][0], amt: Math.round(m * 100) / 100});
+    db[i][1] -= m; cr[j][1] -= m;
+    if(db[i][1] < .01) i++; if(cr[j][1] < .01) j++;
+  }
+  return out;
+}
+function countUp(el, to){
+  const t0 = performance.now(), dur = 700;
+  (function step(t){ const k = Math.min(1, (t - t0) / dur); el.textContent = money(to * (1 - Math.pow(1 - k, 3))); if(k < 1) requestAnimationFrame(step); })(t0);
+}
+$("calc").onclick = () => {
+  if(!expenses.length) return shake($("calc"));
+  const list = settle(), total = expenses.reduce((s, e) => s + e.amount, 0);
+  $("resCard").style.display = "block"; $("total").textContent = money(total);
+  $("results").innerHTML = list.length ? list.map((r, i) => `<div class="res" style="animation-delay:${i * .12}s"><b>${esc(r.from)}</b><span class="arrow">←</span><b>${esc(r.to)}</b><span class="amt" data-n="${r.amt}">0</span></div>`).join("") : '<div class="empty">الحساب متساوي، محدش مديون لحد 🎉</div>';
+  document.querySelectorAll(".amt").forEach((el, i) => setTimeout(() => { sfx.tick(); countUp(el, +el.dataset.n); }, i * 120));
+  lastText = "حساب الشلة 🧾\n" + (list.map(r => `${r.from} يدّي ${r.to}: ${money(r.amt)}`).join("\n") || "الحساب متساوي");
+  setTimeout(() => { sfx.win(); confetti(); }, 150 + list.length * 60);
+  $("resCard").scrollIntoView({behavior: "smooth"});
+};
+$("copy").onclick = async () => {
+  try{ await navigator.clipboard.writeText(lastText); $("copy").textContent = "اتنسخ ✅"; sfx.add(); }
+  catch(e){ $("copy").textContent = "انسخ يدوي"; }
+  setTimeout(() => $("copy").textContent = "انسخ للواتساب", 1600);
+};
+$("reset").onclick = () => { people = []; expenses = []; selected.clear(); $("resCard").style.display = "none"; sfx.del(); render(); scrollTo({top: 0, behavior: "smooth"}); };
+
+document.addEventListener("click", e => { if(e.target.closest("button") && !e.target.closest("#addP,#addE,#calc,#copy,#reset,#mute,[data-ex]")) sfx.click(); });
+render();
+</script>
+</body>
+</html>
